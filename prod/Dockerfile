@@ -46,7 +46,12 @@ RUN chmod +x /usr/local/bin/entrypoint.sh
 # p4d on 1666 (ssl), REST API on 8090
 EXPOSE 1666 8090
 
+# Shell "A || B && C" is (A || B) && C, not "A, else B then C": with SSL=0
+# the previous single-line form still ran the SSL branch and failed, marking
+# a healthy plaintext server unhealthy. Branch explicitly on $SSL instead,
+# and use $P4PORT rather than a hardcoded 1666 so a container-side port
+# override does not break the healthcheck too.
 HEALTHCHECK --interval=30s --timeout=10s --start-period=45s --retries=5 \
-    CMD p4 -p localhost:1666 info || p4 -p ssl:localhost:1666 trust -y > /dev/null 2>&1 && p4 -p ssl:localhost:1666 info
+    CMD sh -c 'if [ "$SSL" = "1" ]; then p4 -p ssl:localhost:$P4PORT info; else p4 -p localhost:$P4PORT info; fi'
 
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]

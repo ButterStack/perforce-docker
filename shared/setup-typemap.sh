@@ -1,5 +1,5 @@
 #!/bin/bash
-# setup-typemap.sh — Applies the correct typemap based on the ENGINE environment variable.
+# setup-typemap.sh - Applies the correct typemap based on the ENGINE environment variable.
 #
 # Usage: ENGINE=unreal ./setup-typemap.sh
 #   ENGINE=unreal  → game-dev-common.txt + unreal-engine.txt
@@ -15,9 +15,13 @@ TYPEMAP_DIR="${TYPEMAP_DIR:-/shared/typemaps}"
 ENGINE="${ENGINE:-unreal}"
 P4USER="${P4USER:-super}"
 P4PORT="${P4PORT:-1666}"
+# Honor an explicit connect string. The prod entrypoint passes P4_CONNECT
+# (e.g. ssl:localhost:1666) because p4d listens on an SSL prefix there and
+# a plain "localhost:$P4PORT" connect string cannot reach it.
+P4_CONNECT="${P4_CONNECT:-localhost:$P4PORT}"
 
 if [ "$ENGINE" = "none" ]; then
-    echo "ENGINE=none — skipping typemap setup."
+    echo "ENGINE=none - skipping typemap setup."
     exit 0
 fi
 
@@ -61,9 +65,9 @@ fi
 
 # Apply the combined typemap
 if [ -n "$COMBINED_TYPEMAP" ]; then
-    echo "$COMBINED_TYPEMAP" | p4 -u "$P4USER" -p "localhost:$P4PORT" typemap -i
+    echo "$COMBINED_TYPEMAP" | p4 -u "$P4USER" -p "$P4_CONNECT" typemap -i
     echo "Typemap applied successfully."
-    echo "  Verify with: p4 typemap -o"
+    echo "  Verify with: p4 -p \"$P4_CONNECT\" typemap -o"
 else
     echo "WARNING: No typemap files found in $TYPEMAP_DIR"
 fi
