@@ -1,6 +1,6 @@
-# Perforce Game Server — Production
+# Perforce Game Server - Production
 # SSL enabled, security level 3, no default credentials.
-# Built by ButterStack — https://butterstack.com
+# Built by ButterStack - https://butterstack.com
 
 FROM ubuntu:24.04
 
@@ -17,9 +17,15 @@ RUN curl -fsSL https://package.perforce.com/perforce.pubkey \
  && apt-add-repository -y "deb http://package.perforce.com/apt/ubuntu noble release" \
  && rm -rf /var/lib/apt/lists/*
 
-# Install helix-p4d (includes p4d, p4 CLI, p4dctl)
+# Install helix-p4d (includes p4d, p4 CLI, p4dctl), pinned to a known version.
+# Perforce's own "helix-p4d" apt package has no version constraint by
+# default, so an unpinned build is not reproducible: two people running this
+# quickstart a month apart get different p4d builds, and a rebuild on
+# existing data can trigger an irreversible schema upgrade to a p4d version
+# nobody chose. Bump P4D_VERSION deliberately, not by drifting with apt.
+ARG P4D_VERSION=2026.1
 RUN apt-get update \
- && apt-get -y install helix-p4d \
+ && apt-get -y install helix-p4d="${P4D_VERSION}"-* \
  && rm -rf /var/lib/apt/lists/*
 
 # Environment defaults (prod-safe: no default password)
@@ -46,7 +52,12 @@ RUN chmod +x /usr/local/bin/entrypoint.sh
 # p4d on 1666 (ssl), REST API on 8090
 EXPOSE 1666 8090
 
+# Shell "A || B && C" is (A || B) && C, not "A, else B then C": with SSL=0
+# the previous single-line form still ran the SSL branch and failed, marking
+# a healthy plaintext server unhealthy. Branch explicitly on $SSL instead,
+# and use $P4PORT rather than a hardcoded 1666 so a container-side port
+# override does not break the healthcheck too.
 HEALTHCHECK --interval=30s --timeout=10s --start-period=45s --retries=5 \
-    CMD p4 -p localhost:1666 info || p4 -p ssl:localhost:1666 trust -y > /dev/null 2>&1 && p4 -p ssl:localhost:1666 info
+    CMD sh -c 'if [ "$SSL" = "1" ]; then p4 -p ssl:localhost:$P4PORT info; else p4 -p localhost:$P4PORT info; fi'
 
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]

@@ -1,6 +1,6 @@
-# Perforce Game Server — Development
+# Perforce Game Server - Development
 # One-command setup: docker compose up
-# Built by ButterStack — https://butterstack.com
+# Built by ButterStack - https://butterstack.com
 
 services:
   perforce:

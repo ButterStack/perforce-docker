@@ -2,7 +2,7 @@
 
 **Run a production-ready Perforce server for game dev in 30 seconds.**
 
-A Docker-based Perforce (Helix Core) server built specifically for game development teams using Unreal Engine 5 and Unity. Includes comprehensive typemaps, REST API, SSL support, and optional Helix Swarm — all with a single `docker compose up`.
+A Docker-based Perforce (Helix Core) server built specifically for game development teams using Unreal Engine 5 and Unity. Includes comprehensive typemaps, REST API, SSL support, and optional Helix Swarm - all with a single `docker compose up`.
 
 Built by [ButterStack](https://butterstack.com).
 
@@ -45,7 +45,7 @@ p4 -p ssl:localhost:1666 trust -y
 
 ### Game Engine Typemaps
 
-The most comprehensive game dev typemaps available — applied automatically based on the `ENGINE` environment variable.
+The most comprehensive game dev typemaps available - applied automatically based on the `ENGINE` environment variable.
 
 ```bash
 ENGINE=unreal  # Unreal Engine 5 (default)
@@ -55,11 +55,11 @@ ENGINE=none    # Skip typemap setup
 ```
 
 Key typemap decisions:
-- **`binary+lF`** for pre-compressed assets (PNG, JPG, MP3) — exclusive lock, no wasted recompression
-- **`binary+l`** for raw binary assets (uasset, umap, FBX, PSD) — exclusive lock, server-compressed
-- **`binary+S2w`** for executables — keep 2 revisions, save terabytes on large projects
-- **`binary+Sw`** for debug symbols (PDB) — keep 1 revision only
-- **`text`** for Unity `.meta` files — critical for preserving asset GUIDs
+- **`binary+lF`** for pre-compressed assets (PNG, JPG, MP3) - exclusive lock, no wasted recompression
+- **`binary+l`** for raw binary assets (uasset, umap, FBX, PSD) - exclusive lock, server-compressed
+- **`binary+S2w`** for executables - keep 2 revisions, save terabytes on large projects
+- **`binary+Sw`** for debug symbols (PDB) - keep 1 revision only
+- **`text`** for Unity `.meta` files - critical for preserving asset GUIDs
 
 See [docs/TYPEMAP_GUIDE.md](docs/TYPEMAP_GUIDE.md) for the full deep-dive on every entry.
 
@@ -87,9 +87,24 @@ Disable with `P4REST_PORT=0`.
 | Default credentials | `super` / `dev123` | Must set `P4PASSWD` (no defaults) |
 | Password expiry | Disabled | Enforced |
 | REST API | Open | Ticket-auth required |
+| Protections | `super` full access, everyone else write-open (deliberately permissive for local dev) | Only `super` has access by default (see below) |
 | Case sensitivity | Insensitive (configurable) | Insensitive (configurable) |
 | Unicode | Enabled | Enabled |
 | Startup | Fast | Slower (SSL cert generation, security hardening) |
+
+**Protections in prod changed in this release.** Earlier versions granted every
+user write access to every depot by default (`write user * * //...`), the same
+wide-open table the dev profile intentionally uses, despite a comment claiming
+otherwise. Prod now grants access to `$P4USER` only; everyone else has no
+access until you explicitly grant it, for example:
+
+```bash
+p4 -p ssl:localhost:1666 -u super protect
+# add a line like: write group developers * //depot/...
+```
+
+If you were relying on the old wide-open default, add an explicit grant like
+the one above before your team's clients hit "no permission" errors.
 
 ### Optional: Helix Swarm
 
@@ -100,6 +115,17 @@ cd prod
 P4PASSWD=YourSecurePassword123% docker compose --profile swarm up -d
 # Swarm UI at http://localhost:8080
 ```
+
+Swarm connects to `ssl:perforce:1666` by default, matching prod's default
+`SSL=1`. If you run prod with `SSL=0`, override the connect string:
+
+```bash
+SWARM_P4PORT=perforce:1666 P4PASSWD=... docker compose --profile swarm up -d
+```
+
+Swarm also needs to trust p4d's certificate before it can connect. With the
+default self-signed certificate this requires a manual trust step inside the
+Swarm container; using a real certificate via `SSL_CERT_DIR` avoids this.
 
 ## Configuration
 
@@ -142,24 +168,35 @@ SSL_CERT_DIR=/path/to/certs docker compose up -d
 # Expects: privatekey.txt and certificate.txt in the directory
 ```
 
-## Comparison
+This takes priority over the auto-generated self-signed certificate on every
+startup, including restarts of a container that previously generated its own
+certificate. `privatekey.txt` should be a PEM-format RSA private key with no
+passphrase; `certificate.txt` the matching PEM-format certificate.
 
-| Feature | perforce-docker | hawkmoth-studio | Snipe3000 | HaberkornJonas |
-|---------|---------------------|-----------------|-----------|----------------|
-| Base OS | Ubuntu 24.04 LTS | CentOS (EOL) | Ubuntu 20.04 | Alpine |
-| p4d version | 2025.2 (latest) | 2020.x | 2023.x | Varies |
-| REST API | Yes (auto-started) | No | No | No |
-| UE5 typemap | Comprehensive | Basic sample | Good | None |
-| Unity typemap | Yes | No | No | No |
-| SSL support | Yes (prod) | No | No | No |
-| Dev + Prod configs | Yes | No | No | No |
-| Case insensitive | Default on | Manual | Manual | Manual |
-| Unicode | Default on | Manual | Manual | Manual |
-| Password recovery | Automatic | No | No | No |
-| Helix Swarm | Optional profile | No | No | No |
-| Stream examples | Yes | No | No | No |
-| CI trigger examples | Yes | Partial | No | No |
-| AGENTS.md (AI-friendly) | Yes | No | No | No |
+### p4d Version
+
+The image pins `helix-p4d` to a specific version (`P4D_VERSION` build arg in
+`dev/Dockerfile` and `prod/Dockerfile`, currently `2026.1`) rather than
+floating on whatever the Perforce apt repository currently ships. This makes
+builds reproducible and keeps the version an explicit, deliberate choice: an
+unpinned build can pull a newer p4d on rebuild, and the entrypoint's schema
+upgrade (`p4d -xu`) on existing data is one-way once it runs against a newer
+major version.
+
+## What makes this different
+
+Most Perforce Docker images get you a running p4d. This one is tuned for a game
+team's actual working set:
+
+- **Unity `.meta` files typed as `text`** so asset GUIDs survive merges. Getting
+  this wrong corrupts references across the whole project.
+- **Revision limits on build output**: `binary+S2w` for executables, `binary+Sw`
+  for PDBs. On a project shipping nightly builds this is the difference between
+  a depot that grows linearly and one that grows without bound.
+- **Separate dev and prod profiles**, so the fast local server and the hardened
+  one are not the same config with a flag.
+- **CI trigger examples** for webhooks, Jenkins, and GitHub Actions.
+- **`AGENTS.md`** for wiring the server to the official Perforce P4 MCP server.
 
 ## Project Structure
 
@@ -184,8 +221,7 @@ perforce-docker/
 │   ├── streams/             # Stream depot setup
 │   └── ci-triggers/         # Webhook + Jenkins + GitHub Actions triggers
 ├── docs/
-│   ├── TYPEMAP_GUIDE.md     # Deep-dive on every typemap entry
-│   └── MIGRATION.md         # Migrating from other Docker images
+│   └── TYPEMAP_GUIDE.md     # Deep-dive on every typemap entry
 ├── AGENTS.md                # AI/LLM integration reference
 ├── LICENSE                  # MIT
 └── README.md
@@ -214,9 +250,9 @@ Covers Unreal Engine, Unity, IDE files, and OS artifacts.
 ### CI Triggers
 
 See `examples/ci-triggers/` for ready-to-use trigger scripts:
-- **webhook-trigger.sh** — Generic webhook on submit
-- **jenkins-trigger.sh** — Jenkins build on `#ci` tag
-- **github-actions-trigger.sh** — GitHub Actions dispatch on `#ci` tag
+- **webhook-trigger.sh** - Generic webhook on submit
+- **jenkins-trigger.sh** - Jenkins build on `#ci` tag
+- **github-actions-trigger.sh** - GitHub Actions dispatch on `#ci` tag
 
 ## AI Integration
 
@@ -245,7 +281,7 @@ Create a dedicated `service` type user for MCP (no password expiry, revocable ti
 }
 ```
 
-See [AGENTS.md](AGENTS.md) for the full setup guide — creating the service account, generating tickets, Docker Compose networking, and an LLM-friendly command reference.
+See [AGENTS.md](AGENTS.md) for the full setup guide - creating the service account, generating tickets, Docker Compose networking, and an LLM-friendly command reference.
 
 ## License
 
@@ -253,4 +289,4 @@ MIT. See [LICENSE](LICENSE).
 
 ---
 
-Built with battle-tested patterns from [ButterStack](https://butterstack.com) — the game dev pipeline platform.
+Built with battle-tested patterns from [ButterStack](https://butterstack.com) - the game dev pipeline platform.

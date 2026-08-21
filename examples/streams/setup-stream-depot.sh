@@ -1,7 +1,7 @@
 #!/bin/bash
 # Example: Create a stream depot and development streams for a game project.
 #
-# Streams are Perforce's modern branching model — think Git branches but
+# Streams are Perforce's modern branching model - think Git branches but
 # with explicit parent/child relationships and automatic merge direction.
 #
 # Usage: P4PORT=localhost:1666 P4USER=super ./setup-stream-depot.sh

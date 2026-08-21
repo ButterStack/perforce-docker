@@ -1,6 +1,6 @@
 # Typemap Guide
 
-Perforce typemaps control how files are stored, compressed, and locked. Getting this right is critical for game development — the wrong typemap can waste terabytes of storage, corrupt binary assets, or cause merge conflicts on unmergeable files.
+Perforce typemaps control how files are stored, compressed, and locked. Getting this right is critical for game development - the wrong typemap can waste terabytes of storage, corrupt binary assets, or cause merge conflicts on unmergeable files.
 
 This guide explains every modifier we use and why.
 
@@ -38,13 +38,13 @@ Binary files (textures, 3D models, maps, audio) **cannot be merged**. If two art
 
 ## Why No-Recompression (`+F`) Matters
 
-By default, Perforce compresses files on the server (`+C`). For files that are **already compressed** (PNG, JPG, MP3, ZIP), this wastes CPU for zero benefit — you can't meaningfully compress a PNG further.
+By default, Perforce compresses files on the server (`+C`). For files that are **already compressed** (PNG, JPG, MP3, ZIP), this wastes CPU for zero benefit - you can't meaningfully compress a PNG further.
 
 `+F` tells the server to store the file as-is, skipping compression. Combined with `+l`:
 
 **`binary+lF`** = exclusive lock + no recompression. Used for: `.png`, `.jpg`, `.mp3`, `.ogg`, `.mp4`, `.zip`.
 
-**`binary+l`** (no `+F`) = exclusive lock + server-compressed. Used for: `.wav`, `.fbx`, `.blend`, `.psd` — uncompressed formats that benefit from server compression.
+**`binary+l`** (no `+F`) = exclusive lock + server-compressed. Used for: `.wav`, `.fbx`, `.blend`, `.psd` - uncompressed formats that benefit from server compression.
 
 ### Storage impact example:
 A 100MB WAV file:
@@ -89,7 +89,7 @@ Executables and debug symbols are large, rebuilt constantly, and old versions ar
 | `.unity` | `binary+l` | Scene files, unmergeable in binary mode |
 | `.prefab` | `binary+l` | Prefab files, unmergeable |
 | `.asset` | `binary+l` | Serialized assets |
-| `.meta` | `text` | **CRITICAL** — YAML text, tracks asset GUIDs. Must be `text`, never `binary`. |
+| `.meta` | `text` | **CRITICAL** - YAML text, tracks asset GUIDs. Must be `text`, never `binary`. |
 | `.shader` | `text` | Shader source, mergeable |
 | `.cs` | `text` | C# scripts, mergeable |
 | `.asmdef` | `text` | Assembly definitions, JSON-based |
@@ -101,8 +101,8 @@ Executables and debug symbols are large, rebuilt constantly, and old versions ar
 
 The typemap files are designed to be layered:
 
-1. **`game-dev-common.txt`** — Base mappings for textures, audio, 3D, video, documents, executables, scripts
-2. **`unreal-engine.txt`** or **`unity.txt`** — Engine-specific overrides layered on top
+1. **`game-dev-common.txt`** - Base mappings for textures, audio, 3D, video, documents, executables, scripts
+2. **`unreal-engine.txt`** or **`unity.txt`** - Engine-specific overrides layered on top
 
 The `ENGINE` environment variable controls which layers are applied:
 - `ENGINE=unreal` → common + unreal
@@ -114,7 +114,7 @@ Engine-specific entries override common entries because Perforce uses the **last
 
 ## Path Patterns
 
-All entries use `//...` (double slash, triple dot) which matches **all depots and all paths**. This means the typemap works regardless of depot name — stream depots, classic depots, whatever you create.
+All entries use `//...` (double slash, triple dot) which matches **all depots and all paths**. This means the typemap works regardless of depot name - stream depots, classic depots, whatever you create.
 
 ```
 binary+l //.../*.uasset     # Matches //game/main/Content/MyAsset.uasset

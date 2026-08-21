@@ -6,8 +6,8 @@
 #       github-ci change-commit //depot/... "/path/to/github-actions-trigger.sh %changelist%"
 #
 # Required environment variables:
-#   GITHUB_TOKEN — Personal access token or fine-grained token with Actions write permission
-#   GITHUB_REPO  — e.g., YourOrg/YourGame
+#   GITHUB_TOKEN - Personal access token or fine-grained token with Actions write permission
+#   GITHUB_REPO  - e.g., YourOrg/YourGame
 
 CHANGELIST="$1"
 GITHUB_TOKEN="${GITHUB_TOKEN:-}"
@@ -25,7 +25,7 @@ if ! echo "$DESCRIPTION" | grep -qi "#ci"; then
     exit 0
 fi
 
-echo "Found #ci in changelist $CHANGELIST — dispatching GitHub Actions workflow..."
+echo "Found #ci in changelist $CHANGELIST - dispatching GitHub Actions workflow..."
 
 HTTP_CODE=$(curl -s -o /dev/null -w '%{http_code}' \
     -X POST \
