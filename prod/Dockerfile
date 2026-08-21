@@ -17,9 +17,15 @@ RUN curl -fsSL https://package.perforce.com/perforce.pubkey \
  && apt-add-repository -y "deb http://package.perforce.com/apt/ubuntu noble release" \
  && rm -rf /var/lib/apt/lists/*
 
-# Install helix-p4d (includes p4d, p4 CLI, p4dctl)
+# Install helix-p4d (includes p4d, p4 CLI, p4dctl), pinned to a known version.
+# Perforce's own "helix-p4d" apt package has no version constraint by
+# default, so an unpinned build is not reproducible: two people running this
+# quickstart a month apart get different p4d builds, and a rebuild on
+# existing data can trigger an irreversible schema upgrade to a p4d version
+# nobody chose. Bump P4D_VERSION deliberately, not by drifting with apt.
+ARG P4D_VERSION=2026.1
 RUN apt-get update \
- && apt-get -y install helix-p4d \
+ && apt-get -y install helix-p4d="${P4D_VERSION}"-* \
  && rm -rf /var/lib/apt/lists/*
 
 # Environment defaults (prod-safe: no default password)
