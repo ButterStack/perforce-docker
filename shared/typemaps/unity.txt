@@ -10,7 +10,7 @@
 TypeMap:
     # ============================================================
     # UNITY SCENE & PREFAB FILES
-    # Binary serialized by default — exclusive lock to prevent conflicts
+    # Binary serialized by default - exclusive lock to prevent conflicts
     # ============================================================
     binary+l //.../*.unity
     binary+l //.../*.prefab

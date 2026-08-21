@@ -1,6 +1,6 @@
-# Perforce Game Server — Development
+# Perforce Game Server - Development
 # Fast startup, no SSL, security level 0, default credentials.
-# Built by ButterStack — https://butterstack.com
+# Built by ButterStack - https://butterstack.com
 
 FROM ubuntu:24.04
 

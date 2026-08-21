@@ -6,10 +6,10 @@
 #       jenkins-ci change-commit //depot/... "/path/to/jenkins-trigger.sh %changelist%"
 #
 # Required environment variables:
-#   JENKINS_URL   — e.g., http://jenkins:8080
-#   JENKINS_JOB   — e.g., GameBuild
-#   JENKINS_USER  — Jenkins username
-#   JENKINS_TOKEN — Jenkins API token
+#   JENKINS_URL   - e.g., http://jenkins:8080
+#   JENKINS_JOB   - e.g., GameBuild
+#   JENKINS_USER  - Jenkins username
+#   JENKINS_TOKEN - Jenkins API token
 
 CHANGELIST="$1"
 JENKINS_URL="${JENKINS_URL:-http://localhost:8080}"
@@ -27,7 +27,7 @@ if ! echo "$DESCRIPTION" | grep -qi "#ci"; then
     exit 0
 fi
 
-echo "Found #ci in changelist $CHANGELIST — triggering Jenkins build..."
+echo "Found #ci in changelist $CHANGELIST - triggering Jenkins build..."
 
 TRIGGER_URL="${JENKINS_URL}/job/${JENKINS_JOB}/buildWithParameters?P4_CHANGELIST=${CHANGELIST}"
 HTTP_CODE=$(curl -s -o /dev/null -w '%{http_code}' \

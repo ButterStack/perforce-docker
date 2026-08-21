@@ -1,4 +1,4 @@
-# AGENTS.md — AI Integration Reference
+# AGENTS.md - AI Integration Reference
 
 This file helps AI coding assistants (Claude, Cursor, Copilot, etc.) work with the Perforce game server. Add this to your AI's context for productive Perforce operations.
 
@@ -188,7 +188,7 @@ curl -u super:$TICKET -H "Accept: application/jsonl" \
 curl -u super:$TICKET -H "Accept: text/plain" \
   "http://localhost:8090/api/v0/file/contents?fileSpec=//depot/file.txt"
 
-# File contents (binary — save to file)
+# File contents (binary - save to file)
 curl -u super:$TICKET -o output.png \
   "http://localhost:8090/api/v0/file/contents?fileSpec=//depot/texture.png"
 
@@ -254,7 +254,7 @@ printf 'new\noriginal\noriginal\n' | p4 passwd
 ```
 
 ### "Case sensitivity mismatch"
-Server initialized with `-C1` (case insensitive, default). If your client OS is case-sensitive and you see warnings, this is usually fine for game dev — UE and Unity expect case-insensitive behavior on Windows.
+Server initialized with `-C1` (case insensitive, default). If your client OS is case-sensitive and you see warnings, this is usually fine for game dev - UE and Unity expect case-insensitive behavior on Windows.
 
 ### "Unicode mode mismatch"
 Server runs in Unicode mode by default. Set `P4CHARSET=utf8` on the client if you get charset errors:
@@ -291,7 +291,7 @@ P4_HOST_PORT=9166 REST_HOST_PORT=9090 docker compose up -d
 
 ## MCP Integration
 
-The official [Perforce P4 MCP Server](https://github.com/perforce/p4mcp-server) lets AI coding assistants (Claude, Cursor, Copilot, etc.) interact with Perforce directly via tool calls — querying files, managing changelists, syncing workspaces, and more.
+The official [Perforce P4 MCP Server](https://github.com/perforce/p4mcp-server) lets AI coding assistants (Claude, Cursor, Copilot, etc.) interact with Perforce directly via tool calls - querying files, managing changelists, syncing workspaces, and more.
 
 ### Setup
 
@@ -316,7 +316,7 @@ printf 'McpAgent123%%\nMcpAgent123%%\n' | p4 -u mcp-agent passwd
 
 # Generate a long-lived ticket (persists across restarts)
 printf 'McpAgent123%%\n' | p4 -u mcp-agent login -p -a
-# Save the ticket hash output — this is what goes in your MCP config
+# Save the ticket hash output - this is what goes in your MCP config
 ```
 
 #### 3. Configure your AI assistant
@@ -371,7 +371,7 @@ Use the **ticket hash** (not the password) in the `P4PASSWD` field. Perforce acc
 }
 ```
 
-> **Why a service account?** The `service` user type doesn't expire tickets, can't log in interactively, and can be given scoped permissions via the protect table. If the ticket leaks, revoke it with `p4 logout -a mcp-agent` — no password change needed.
+> **Why a service account?** The `service` user type doesn't expire tickets, can't log in interactively, and can be given scoped permissions via the protect table. If the ticket leaks, revoke it with `p4 logout -a mcp-agent` - no password change needed.
 
 ### Docker Compose Networking
 

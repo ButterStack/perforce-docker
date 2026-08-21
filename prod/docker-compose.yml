@@ -1,6 +1,6 @@
-# Perforce Game Server — Production
+# Perforce Game Server - Production
 # SSL enabled, security level 3. Includes optional Helix Swarm profile.
-# Built by ButterStack — https://butterstack.com
+# Built by ButterStack - https://butterstack.com
 #
 # Usage:
 #   docker compose up -d                      # Perforce only
@@ -32,7 +32,7 @@ services:
     restart: unless-stopped
 
   # ============================================================
-  # HELIX SWARM (optional — enable with --profile swarm)
+  # HELIX SWARM (optional - enable with --profile swarm)
   # Code review and collaboration for Perforce
   # ============================================================
   swarm-redis:

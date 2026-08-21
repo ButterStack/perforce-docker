@@ -1,6 +1,6 @@
-# Perforce Game Server — Production
+# Perforce Game Server - Production
 # SSL enabled, security level 3, no default credentials.
-# Built by ButterStack — https://butterstack.com
+# Built by ButterStack - https://butterstack.com
 
 FROM ubuntu:24.04
 

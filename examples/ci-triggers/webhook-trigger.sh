@@ -44,5 +44,5 @@ else
     echo "WARNING: Webhook failed for changelist $CHANGELIST (HTTP $HTTP_CODE)" >&2
 fi
 
-# Always exit 0 — never block a submit because the webhook failed
+# Always exit 0 - never block a submit because the webhook failed
 exit 0
