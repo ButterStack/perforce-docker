@@ -1,0 +1,77 @@
+# Cut a release by pushing a tag: `git tag v0.1.0 && git push origin v0.1.0`.
+# The tag run re-runs the same script and compose validation as CI (so a tag
+# can never cut a release from a broken tree), then produces a GitHub Release
+# on the Releases page with auto-generated notes from the commit history, and
+# publishes the production image to ghcr.io/butterstack/perforce-docker
+# tagged with the version and `latest`.
+# Merging to main releases nothing - only a `v*` tag push triggers this.
+name: release
+on:
+  push:
+    tags: ["v*"]
+permissions:
+  contents: write
+  packages: write
+jobs:
+  ci:
+    uses: ./.github/workflows/ci.yml
+
+  release:
+    needs: ci
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${GITHUB_REF_NAME}" \
+            --title "${GITHUB_REF_NAME}" \
+            --generate-notes \
+            --verify-tag
+
+  image:
+    needs: ci
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: docker/setup-buildx-action@v4
+      - uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      # No docker/setup-qemu-action step here (unlike the connector image):
+      # QEMU exists to let one amd64 runner cross-build a second
+      # architecture, and this image only targets linux/amd64 - see why
+      # below. Add it back if linux/arm64 ever becomes buildable.
+      #
+      # helix-p4d has no arm64 build in Perforce's own apt repo (the repo's
+      # dists/noble/Release lists "Architectures: amd64 i386" only, and its
+      # binary-arm64/Packages path 404s), confirmed by an actual local arm64
+      # build attempt failing with "Unable to locate package helix-p4d". So,
+      # unlike the connector image, this publishes linux/amd64 only. Do not
+      # add linux/arm64 to the platforms list below without first confirming
+      # Perforce has shipped an arm64 helix-p4d package - adding it back
+      # blind reproduces the connector's v0.1.0 issue #5 (buildx silently
+      # emitting an amd64-only manifest under a multi-arch tag).
+      #
+      # There is no multi-stage build here to target: prod/Dockerfile is a
+      # single FROM ubuntu:24.04 stage, so there is no "runtime"-style stage
+      # name to pin.
+      - uses: docker/build-push-action@v7
+        with:
+          context: prod
+          file: prod/Dockerfile
+          build-contexts: |
+            shared=shared
+          platforms: linux/amd64
+          push: true
+          provenance: true
+          sbom: true
+          tags: |
+            ghcr.io/butterstack/perforce-docker:${{ github.ref_name }}
+            ghcr.io/butterstack/perforce-docker:latest
