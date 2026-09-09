@@ -106,6 +106,12 @@ p4 -p ssl:localhost:1666 -u super protect
 If you were relying on the old wide-open default, add an explicit grant like
 the one above before your team's clients hit "no permission" errors.
 
+This default table is seeded only on first initialization of a fresh data
+volume. Once the server has been initialized, the protections table is
+yours: the entrypoint never rewrites it again on a restart or `docker compose
+up`, so whatever you grant with `p4 protect` persists across container
+restarts and recreates.
+
 ### Optional: Helix Swarm
 
 Code review for Perforce, included as an optional Docker Compose profile in the prod configuration:

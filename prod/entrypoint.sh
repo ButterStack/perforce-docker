@@ -78,6 +78,7 @@ fi
 # Initialize server on first run
 if [ ! -f "$P4ROOT/db.config" ]; then
     echo "First run - initializing Perforce server..."
+    IS_FIRST_RUN=1
 
     INIT_ARGS="-r $P4ROOT -J $P4ROOT/journal"
     NEEDS_INIT=0
@@ -104,6 +105,7 @@ if [ ! -f "$P4ROOT/db.config" ]; then
     fi
 else
     echo "Existing data detected. Running schema upgrade..."
+    IS_FIRST_RUN=0
     p4d -r "$P4ROOT" -J "$P4ROOT/journal" -xu
     echo "Schema upgrade complete."
 fi
@@ -203,10 +205,29 @@ SECURITY_LEVEL="${SECURITY_LEVEL:-unknown}"
 # table Perforce allows. Grant access to your team explicitly, for example:
 #   p4 -p "$P4_CONNECT" protect   # edit the table, add e.g.:
 #   write group developers * //depot/...
-echo "Protections:" > /tmp/protect.txt
-echo "	super user $P4USER * //..." >> /tmp/protect.txt
-p4 -u "$P4USER" -p "$P4_CONNECT" protect -i < /tmp/protect.txt 2>/dev/null || true
-rm -f /tmp/protect.txt
+#
+# Seed this table ONLY on first initialization ($IS_FIRST_RUN, set by the
+# db.config check above), never on a restart of an already-initialized
+# server. p4d persists the protections table in db.protect across restarts,
+# so re-running this unconditionally on every container start silently wiped
+# out whatever protections an operator had since configured, dropping every
+# non-$P4USER account back to no access on the next restart or compose sync.
+# This is exactly what happened on the bsg-cp-01 studio box on 2026-09-08.
+# Do not remove this guard.
+if [ "$IS_FIRST_RUN" = "1" ]; then
+    echo "Protections:" > /tmp/protect.txt
+    echo "	super user $P4USER * //..." >> /tmp/protect.txt
+    if p4 -u "$P4USER" -p "$P4_CONNECT" protect -i < /tmp/protect.txt; then
+        echo "Default protections table seeded (super user $P4USER only)."
+    else
+        echo "ERROR: Could not seed the initial protections table."
+        echo "ERROR: The server may be running with no protections table set."
+        echo "ERROR: Connect manually and run 'p4 -p \"$P4_CONNECT\" protect' to set one."
+    fi
+    rm -f /tmp/protect.txt
+else
+    echo "Existing data detected - leaving the protections table as configured."
+fi
 
 # Apply typemap
 # P4_CONNECT carries the ssl: prefix p4d is actually listening on (see above).
