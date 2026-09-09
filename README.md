@@ -29,6 +29,19 @@ cd prod
 P4PASSWD=YourSecurePassword123% docker compose up -d
 ```
 
+`docker compose up` builds the image locally from `prod/Dockerfile`. To use
+the prebuilt image from GitHub Container Registry instead (see
+[Releases](#releases) below), pull it and run it directly:
+
+```bash
+docker pull ghcr.io/butterstack/perforce-docker:v0.1.0
+docker run -d --name perforce \
+  -p 1666:1666 -p 8090:8090 \
+  -e P4PASSWD=YourSecurePassword123% \
+  -v perforce_data:/data \
+  ghcr.io/butterstack/perforce-docker:v0.1.0
+```
+
 Connect:
 ```
 Server:   ssl:localhost:1666
@@ -294,7 +307,13 @@ git tag v0.1.0
 git push origin v0.1.0
 ```
 
-The tag push re-runs the same validation as CI, then creates a GitHub Release with notes generated from the commit history. There's no prebuilt image today - clone this repo and build with `docker compose up` as shown above.
+The tag push re-runs the same validation as CI, creates a GitHub Release with notes generated from the commit history, and publishes the production image (`prod/Dockerfile`) to GitHub Container Registry, tagged with both the version and `latest`:
+
+```bash
+docker pull ghcr.io/butterstack/perforce-docker:v0.1.0
+```
+
+**Architecture: `linux/amd64` only.** Perforce's own apt repository does not ship an `arm64` build of `helix-p4d` (its `noble` release lists `amd64` and `i386` only), so this image cannot be built for `arm64` today. Running it on Apple Silicon or another arm64 host requires emulation (e.g. Docker Desktop/OrbStack's `linux/amd64` emulation), which works but is slower than a native image. If you don't want to rely on an image built by us, or need `arm64`, clone the repo and build it yourself with `docker compose up` as shown above - the compose build honors your host's native architecture.
 
 ## License
 
