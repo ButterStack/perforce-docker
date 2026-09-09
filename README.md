@@ -283,6 +283,19 @@ Create a dedicated `service` type user for MCP (no password expiry, revocable ti
 
 See [AGENTS.md](AGENTS.md) for the full setup guide - creating the service account, generating tickets, Docker Compose networking, and an LLM-friendly command reference.
 
+## Releases
+
+Every push to `main` runs CI (script syntax/lint checks, compose file validation) but publishes nothing.
+
+A release is cut by pushing a version tag:
+
+```bash
+git tag v0.1.0
+git push origin v0.1.0
+```
+
+The tag push re-runs the same validation as CI, then creates a GitHub Release with notes generated from the commit history. There's no prebuilt image today - clone this repo and build with `docker compose up` as shown above.
+
 ## License
 
 MIT. See [LICENSE](LICENSE).

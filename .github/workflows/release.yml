@@ -1,0 +1,32 @@
+# Cut a release by pushing a tag: `git tag v0.1.0 && git push origin v0.1.0`.
+# The tag run re-runs the same script and compose validation as CI (so a tag
+# can never cut a release from a broken tree), then produces a GitHub Release
+# on the Releases page with auto-generated notes from the commit history.
+# Merging to main releases nothing - only a `v*` tag push triggers this.
+# This does not build or publish a container image; see the repo README and
+# the PR that introduced this workflow for that open question.
+name: release
+on:
+  push:
+    tags: ["v*"]
+permissions:
+  contents: write
+jobs:
+  ci:
+    uses: ./.github/workflows/ci.yml
+
+  release:
+    needs: ci
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${GITHUB_REF_NAME}" \
+            --title "${GITHUB_REF_NAME}" \
+            --generate-notes \
+            --verify-tag

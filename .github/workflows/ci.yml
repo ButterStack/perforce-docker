@@ -1,0 +1,67 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  # Lets release.yml call this workflow so a tag can never cut a release
+  # from checks that differ from what a normal PR has to pass.
+  workflow_call:
+
+jobs:
+  lint:
+    name: Lint scripts and validate compose
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Discover shell scripts
+        run: |
+          set -euo pipefail
+          {
+            find . -not -path './.git/*' -type f -name '*.sh'
+            find . -not -path './.git/*' -type f ! -name '*.*' \
+              -exec sh -c 'head -n1 "$1" | grep -qE "^#!.*(bash|sh)" && echo "$1"' _ {} \;
+          } | sort -u > shell_scripts.txt
+          echo "Discovered $(wc -l < shell_scripts.txt) script(s):"
+          cat shell_scripts.txt
+
+      - name: Syntax check (bash -n)
+        run: |
+          set -euo pipefail
+          while IFS= read -r f; do
+            echo "bash -n $f"
+            bash -n "$f"
+          done < shell_scripts.txt
+
+      - name: Ensure shellcheck is available
+        run: |
+          if ! command -v shellcheck >/dev/null 2>&1; then
+            sudo apt-get update && sudo apt-get install -y shellcheck
+          fi
+          shellcheck --version
+
+      - name: shellcheck (error severity)
+        run: |
+          set -euo pipefail
+          # This codebase has never been linted, so a strict run fails on
+          # pre-existing style findings. Gate on -S error (genuine breakage)
+          # for now; tightening to `warning` once the backlog is cleaned up
+          # is a tracked follow-up, not done in this workflow.
+          xargs shellcheck -S error < shell_scripts.txt
+
+      - name: Validate compose files
+        run: |
+          set -euo pipefail
+          find . -not -path './.git/*' -iname 'docker-compose*.yml' | while IFS= read -r f; do
+            dir=$(dirname "$f")
+            base=$(basename "$f")
+            echo "Validating $f"
+            # prod/docker-compose.yml requires P4PASSWD with no default (by
+            # design, prod has no baked-in credentials); a placeholder is
+            # enough to let config parse without starting anything.
+            (cd "$dir" && P4PASSWD=ci-placeholder-password docker compose -f "$base" config -q)
+          done
